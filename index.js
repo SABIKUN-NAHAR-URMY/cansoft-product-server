@@ -14,7 +14,8 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ho0d8c2.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-// 123456A!
+// 123456A!(urmy)
+// 123456@A(sucu)
 
 // function verifyJWT(req, res, next) {
 //     const authHeader = req.headers.authorization;
@@ -41,9 +42,29 @@ async function run() {
             res.send(cursor);
         })
 
+        app.post('/login', async (req, res) =>{
+            const query = {
+                email: req.body.email
+            }
+            console.log(query);
+            const userPass = await usersCollection.find(query).toArray();
+            console.log(userPass);
+            const pass = await bcrypt.compare(req.body.password, userPass[0].password);
+            console.log(pass);
+            if(pass === true && req.body.email){
+                return res.send({acknowledged: true})
+            }
+        })
 
-        app.post('/users', async (req, res) => {
+        app.post('/signup', async (req, res) => {
             const hashedPass = await bcrypt.hash(req.body.password, 10);
+            const query = {
+                email: req.body.email,  
+            }
+            const alreadyRegister = await usersCollection.find(query).toArray();
+            if (alreadyRegister.length) {
+                return res.send({ acknowledged: false });
+            }
             const user = {
                 firstName: req.body.firstName,
                 lastName: req.body.lastName,
