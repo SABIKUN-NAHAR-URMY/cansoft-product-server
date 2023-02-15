@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
-// const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
@@ -16,23 +14,6 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ho0d8c2.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-// 123456A!(urmy)
-// 123456S@S(sucu)
-
-// function verifyJWT(req, res, next) {
-//     const authHeader = req.headers.authorization;
-//     if (!authHeader) {
-//         res.status(401).send({ message: 'Unauthorized access' })
-//     }
-//     const token = authHeader.split(' ')[1];
-//     jwt.verify(token, process.env.ACCESS_SECRET_TOKEN, function (err, decoded) {
-//         if (err) {
-//             res.status(401).send({ message: 'Unauthorized access' });
-//         }
-//         req.decoded = decoded;
-//         next();
-//     })
-// }
 
 async function run() {
     try {
@@ -50,13 +31,11 @@ async function run() {
                 email: req.body.email
             }
             const userInfo = await usersCollection.find(query).toArray();
-            console.log(userInfo);
             if(userInfo.length === 0){
                 return res.send({acknowledged: false});
             }
             else{
                 const pass = await bcrypt.compare(req.body.password, userInfo[0].password);
-                console.log(pass);
                 if(pass === true && req.body.email){
                     return res.send({acknowledged: true, userInfo: userInfo})
                 }
@@ -71,7 +50,6 @@ async function run() {
                 email: req.body.email
             }
             const userEmail = await usersCollection.find(query).toArray();
-            console.log(userEmail);
             if(userEmail.length === 0){
                 return res.send({acknowledged: false});
             }
@@ -87,9 +65,7 @@ async function run() {
                 const password = req.body.password;
                 const hashedPass = await bcrypt.hash(password, 10);
                 const query = { _id : new ObjectId(id)}
-                // const userQuery = await usersCollection.find(query).toArray();
-                // const pass = await bcrypt.compare(password, userQuery[0].password);
-                // console.log(pass);
+
                 const updateDoc = {
                     $set: {
                         password: hashedPass
@@ -187,9 +163,9 @@ async function run() {
 run().catch(error => console.error(error));
 
 app.get('/', (req, res) => {
-    res.send(' server running!')
+    res.send('BackendServer running!')
 })
 
 app.listen(port, () => {
-    console.log(` server listening on port ${port}`)
+    console.log(`BackendServer listening on port ${port}`)
 })
