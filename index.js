@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 // const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
@@ -15,7 +17,7 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 // 123456A!(urmy)
-// 123456@A(sucu)
+// 123456S@S(sucu)
 
 // function verifyJWT(req, res, next) {
 //     const authHeader = req.headers.authorization;
@@ -63,6 +65,41 @@ async function run() {
                 }
             }
         })
+
+        app.post('/forgot', async (req, res) => {
+            const query = {
+                email: req.body.email
+            }
+            const userEmail = await usersCollection.find(query).toArray();
+            console.log(userEmail);
+            if(userEmail.length === 0){
+                return res.send({acknowledged: false});
+            }
+            else {
+                return res.send({acknowledged: true, userEmail: userEmail});
+            }
+
+            })
+
+
+            app.patch('/resetPass/:id', async (req, res) => {
+                const id = req.params.id;
+                const password = req.body.password;
+                const hashedPass = await bcrypt.hash(password, 10);
+                const query = { _id : new ObjectId(id)}
+                // const userQuery = await usersCollection.find(query).toArray();
+                // const pass = await bcrypt.compare(password, userQuery[0].password);
+                // console.log(pass);
+                const updateDoc = {
+                    $set: {
+                        password: hashedPass
+                    }
+                }
+                const result = await usersCollection.updateOne(query, updateDoc);
+                res.send(result);
+    
+            })
+
 
         app.post('/signup', async (req, res) => {
             const hashedPass = await bcrypt.hash(req.body.password, 10);
@@ -114,6 +151,31 @@ async function run() {
                 }
             }
             const result = await productsCollection.updateOne(query, updateDoc);
+            res.send(result);
+
+        })
+
+        app.get('/editUserProfile/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id)};
+            const result = await usersCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.patch('/editUserProfile/:id', async (req, res) => {
+            const id = req.params.id;
+            const firstName = req.body.firstName;
+            const lastName = req.body.lastName;
+            const phone = req.body.phone;
+            const query = { _id : new ObjectId(id)}
+            const updateDoc = {
+                $set: {
+                    firstName: firstName,
+                    lastName: lastName,
+                    phone: phone
+                }
+            }
+            const result = await usersCollection.updateOne(query, updateDoc);
             res.send(result);
 
         })
