@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 // const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 require('dotenv').config();
@@ -35,6 +35,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const usersCollection = client.db('productList').collection('users');
+        const productsCollection = client.db('productList').collection('products');
 
         app.get('/users', async (req, res) => {
             const query = {};
@@ -46,13 +47,20 @@ async function run() {
             const query = {
                 email: req.body.email
             }
-            console.log(query);
-            const userPass = await usersCollection.find(query).toArray();
-            console.log(userPass);
-            const pass = await bcrypt.compare(req.body.password, userPass[0].password);
-            console.log(pass);
-            if(pass === true && req.body.email){
-                return res.send({acknowledged: true})
+            const userInfo = await usersCollection.find(query).toArray();
+            console.log(userInfo);
+            if(userInfo.length === 0){
+                return res.send({acknowledged: false});
+            }
+            else{
+                const pass = await bcrypt.compare(req.body.password, userInfo[0].password);
+                console.log(pass);
+                if(pass === true && req.body.email){
+                    return res.send({acknowledged: true, userInfo: userInfo})
+                }
+                else {
+                    return res.send({acknowledged: false})
+                }
             }
         })
 
@@ -75,6 +83,39 @@ async function run() {
             };
             const result = await usersCollection.insertOne(user);
             res.send(result);
+        })
+
+        app.get('/products', async (req, res) => {
+            const query = {};
+            const cursor = await productsCollection.find(query).toArray();
+            res.send(cursor);
+        })
+
+        app.get('/editProduct/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id)};
+            const result = await productsCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.patch('/editProduct/:id', async (req, res) => {
+            const id = req.params.id;
+            const title = req.body.title;
+            const price = req.body.price;
+            const rating = req.body.rating;
+            const stock = req.body.stock;
+            const query = { _id : new ObjectId(id)}
+            const updateDoc = {
+                $set: {
+                    title: title,
+                    price: price,
+                    rating: rating,
+                    stock: stock
+                }
+            }
+            const result = await productsCollection.updateOne(query, updateDoc);
+            res.send(result);
+
         })
     }
     finally {
